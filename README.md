@@ -17,7 +17,7 @@ git clone https://github.com/ArtemDaemon/go-data-tool.git
 cd go-data-tool
 ```
 
-## :running_person: Running
+## :man_running: Running
 ...cli-endpoints
 
 ## :document: License
