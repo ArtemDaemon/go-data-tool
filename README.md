@@ -9,5 +9,16 @@ Universal CLI utility for working with CSV files, integrating with external APIs
 - :construction: Covered with tests for major components
 
 ## :package: Technologies
-- ...
+- Go
 
+## :hammer_and_wrench: Installation
+```bash
+git clone https://github.com/ArtemDaemon/go-data-tool.git
+cd go-data-tool
+```
+
+## :running_person: Running
+...cli-endpoints
+
+## :document: License
+MIT License - use it freely, improve it, share it :party_popper:
