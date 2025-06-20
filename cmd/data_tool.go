@@ -13,9 +13,7 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "go-data-tool",
 	Short: "Universal CLI utility for performing basic data operations",
-	Long: `go-data-tool is a CLI utility for working with CSV files, 
-integrating with external APIs, 
-backup and logging`,
+	Long:  `go-data-tool is a CLI utility for working with CSV files, integrating with external APIs, backup and logging`,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
