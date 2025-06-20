@@ -6,7 +6,7 @@ import (
 
 var (
 	input  string // input file
-	output string //output file
+	output string // output file
 )
 
 var parseCmd = &cobra.Command{
