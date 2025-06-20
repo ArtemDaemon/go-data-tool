@@ -12,6 +12,7 @@ This project is a trial run in creating a full-fledged multitasking utility in G
 
 ## 📦 Technologies
 - Go
+- [Cobra](https://github.com/spf13/cobra)
 
 ## 🛠️ Installation
 ```bash
