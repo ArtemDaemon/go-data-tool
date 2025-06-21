@@ -20,5 +20,5 @@ var parseCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(parseCmd)
 	parseCmd.Flags().StringVarP(&input, "input", "i", "", "file address for processing")
-	parseCmd.Flags().StringVarP(&output, "output", "o", "output.csv", "output file address")
+	parseCmd.Flags().StringVarP(&output, "output", "o", "", "output file address")
 }
