@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"go-data-tool/internal/csv"
+	"log"
+
 	"github.com/spf13/cobra"
 )
 
@@ -14,6 +17,20 @@ var parseCmd = &cobra.Command{
 	Short: "Processing CSV data",
 	Long:  `The parse command allows you to read CSV file data, perform filtering, column selection, grouping, and aggregation.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		var records [][]string
+
+		// Check if input flag is not empty and check existance of file
+		if input != "" {
+			records = csv.ParseCSV(input)
+		}
+		// TODO: Add the ability to parse data passed through the pipeline
+
+		if output != "" {
+			csv.SaveCSV(records, output)
+		}
+		// TODO: Add the ability to pass data through the pipeline
+
+		log.Println("CSV data was processed correctly")
 	},
 }
 
