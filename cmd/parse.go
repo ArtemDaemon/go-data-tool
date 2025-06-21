@@ -22,6 +22,11 @@ var parseCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		var records [][]string
 
+		// Process filters
+		for _, filter := range filters {
+			log.Println(filter)
+		}
+
 		// Check if input flag is not empty and check existance of file
 		if input != "" {
 			if _, err := os.Stat(input); err != nil && errors.Is(err, os.ErrNotExist) {
@@ -44,5 +49,8 @@ func init() {
 	rootCmd.AddCommand(parseCmd)
 	parseCmd.Flags().StringVarP(&input, "input", "i", "", "file address for processing")
 	parseCmd.Flags().StringVarP(&output, "output", "o", "", "output file address")
-	parseCmd.Flags().StringSliceVarP(&filters, "filter", "f", []string{}, "set of filters in the format key=value; can be passed in by separating them with commas or by reusing the flag")
+	parseCmd.Flags().StringSliceVarP(&filters, "filter", "f", []string{}, `set of filters in the format "column operation value"
+can be passed in by separating them with commas or by reusing the flag
+values for comparison by greater than and less than operations must be numeric
+possible operations: =, !=, >, >=, <, <=`)
 }
