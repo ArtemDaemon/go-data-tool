@@ -8,8 +8,9 @@ import (
 )
 
 var (
-	input  string // input file
-	output string // output file
+	input   string   // input file
+	output  string   // output file
+	filters []string // slice of installed filters
 )
 
 var parseCmd = &cobra.Command{
@@ -38,4 +39,5 @@ func init() {
 	rootCmd.AddCommand(parseCmd)
 	parseCmd.Flags().StringVarP(&input, "input", "i", "", "file address for processing")
 	parseCmd.Flags().StringVarP(&output, "output", "o", "", "output file address")
+	parseCmd.Flags().StringSliceVarP(&filters, "filter", "f", []string{}, "set of filters in the format key=value; can be passed in by separating them with commas or by reusing the flag")
 }
