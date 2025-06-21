@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"errors"
 	"go-data-tool/internal/csv"
 	"log"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -22,6 +24,9 @@ var parseCmd = &cobra.Command{
 
 		// Check if input flag is not empty and check existance of file
 		if input != "" {
+			if _, err := os.Stat(input); err != nil && errors.Is(err, os.ErrNotExist) {
+				log.Fatal("Input file not found")
+			}
 			records = csv.ParseCSV(input)
 		}
 		// TODO: Add the ability to parse data passed through the pipeline
