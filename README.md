@@ -21,7 +21,7 @@ cd go-data-tool
 ```
 
 ## 🏃 Running
-The utility has the following commands
+The utility has the following commands:
 ### CSV-parsing: `go-data-tool parse`
 Parsing, processing and outputting CSV data. Flags:
 - `input` - file address for processing
