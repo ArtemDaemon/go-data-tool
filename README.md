@@ -21,7 +21,15 @@ cd go-data-tool
 ```
 
 ## 🏃 Running
-...cli-endpoints
+The utility has the following commands
+### CSV-parsing: `go-data-tool parse`
+Parsing, processing and outputting CSV data. Flags:
+- `input` - file address for processing
+- `output` - output file address
+- `filter` - set of filters in the format "column operation value";
+can be passed in by separating them with commas or by reusing the flag;
+values for comparison by greater than and less than operations must be numeric;
+possible operations: `=, !=, >, >=, <, <=`
 
 ## 🗒️ License
 MIT License - use it freely, improve it, share it :party_popper:
