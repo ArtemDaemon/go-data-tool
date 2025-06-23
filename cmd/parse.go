@@ -21,23 +21,35 @@ var parseCmd = &cobra.Command{
 	Long:  `The parse command allows you to read CSV file data, perform filtering, column selection, grouping, and aggregation.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var records [][]string
+		var parsedFilters []csv.Filter
 
 		// Process filters
 		for _, filter := range filters {
-			log.Println(filter)
+			parsedFilter, err := csv.ParseFilter(filter)
+			if err != nil {
+				log.Fatalf("Filter '%s' parsing error: %s", filter, err)
+			}
+			parsedFilters = append(parsedFilters, *parsedFilter)
 		}
 
 		// Check if input flag is not empty and check existance of file
 		if input != "" {
-			if _, err := os.Stat(input); err != nil && errors.Is(err, os.ErrNotExist) {
+			var err error
+			if _, err = os.Stat(input); err != nil && errors.Is(err, os.ErrNotExist) {
 				log.Fatal("Input file not found")
 			}
-			records = csv.ParseCSV(input)
+			records, err = csv.ParseCSV(input, parsedFilters)
+			if err != nil {
+				log.Fatal("Error parsing csv file: ", err)
+			}
 		}
 		// TODO: Add the ability to parse data passed through the pipeline
 
 		if output != "" {
-			csv.SaveCSV(records, output)
+			err := csv.SaveCSV(records, output)
+			if err != nil {
+				log.Fatal("Error saving csv file", err)
+			}
 		}
 		// TODO: Add the ability to pass data through the pipeline
 
