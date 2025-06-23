@@ -34,4 +34,4 @@ values for comparison by greater than and less than operations must be numeric;
 possible operations: `=, !=, >, >=, <, <=`
 
 ## 🗒️ License
-MIT License - use it freely, improve it, share it :party_popper:
+MIT License - use it freely, improve it, share it 🥳
