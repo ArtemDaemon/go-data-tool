@@ -12,7 +12,9 @@ This project is a trial run in creating a full-fledged multitasking utility in G
 
 ## 📦 Technologies
 - Go
-- [Cobra](https://github.com/spf13/cobra)
+- [cobra](https://github.com/spf13/cobra) for CLI-commands
+- [encoding/csv](https://pkg.go.dev/encoding/csv) for parsing CSV-file
+- [regexp](https://pkg.go.dev/regexp) for filter recognition
 
 ## 🛠️ Installation
 ```bash
