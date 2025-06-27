@@ -98,7 +98,7 @@ func ParseCSVStructure(filepath string) (Scheme, error) {
 	return scheme, nil
 }
 
-func ParseCSV(filepath string, scheme Scheme, filters []Filter) ([][]string, error) {
+func ParseCSV(filepath string, scheme Scheme, filters []Filter, aggregations []Aggregation) ([][]string, error) {
 	f, err := os.Open(filepath)
 	if err != nil {
 		return nil, err
@@ -188,8 +188,7 @@ func ParseFilter(filter string, scheme Scheme) (Filter, error) {
 
 	// Check if non numeric value pass to the numeric type column
 	valueType := getTypeByValue(filterParts[3])
-	if column.ColumnType.Name() != TypeString.TypeName &&
-		valueType != column.ColumnType {
+	if column.ColumnType != TypeString && valueType != column.ColumnType {
 		return filterObj, fmt.Errorf("value type is '%s', column type is '%s'", valueType.Name(), column.ColumnType.Name())
 	}
 
@@ -230,4 +229,30 @@ func getTypeByValue(value string) ColumnTypeInterface {
 	}
 
 	return TypeString
+}
+
+func ParseAggregation(aggregationColumn string, aggraggregationType AggregationType, scheme Scheme) (Aggregation, error) {
+	aggregation := Aggregation{}
+
+	// Check if column exists
+	columns := scheme.Columns
+	column, ok := columns[aggregationColumn]
+	if !ok {
+		return aggregation, errors.New("filter for non-existent column")
+	}
+
+	// For sum and avg check if columnType is not string
+	if (aggraggregationType == Sum || aggraggregationType == Avg) && column.ColumnType == TypeString {
+		var typeStr string
+		if aggraggregationType == Sum {
+			typeStr = "sum"
+		} else {
+			typeStr = "avg"
+		}
+		return aggregation, fmt.Errorf("'%s' aggregation type can only be applied to columns with numeric data type", typeStr)
+	}
+
+	aggregation.aggregationType = aggraggregationType
+	aggregation.column = aggregationColumn
+	return aggregation, nil
 }

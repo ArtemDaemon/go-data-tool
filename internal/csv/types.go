@@ -116,3 +116,19 @@ type Filter struct {
 	comparisonType  comparisonType // Type of comparison between the value in the column and the control value
 	comparisonValue string         // Control value for comparison
 }
+
+type AggregationType int
+
+const (
+	Sum AggregationType = iota
+	Avg
+	Max
+	Min
+	Count
+	CountDistinct
+)
+
+type Aggregation struct {
+	aggregationType AggregationType // Type of aggregation need to make
+	column          string          // Column of CSV data
+}

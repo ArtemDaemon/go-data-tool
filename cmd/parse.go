@@ -13,6 +13,7 @@ var (
 	input   string   // input file
 	output  string   // output file
 	filters []string // slice of installed filters
+	sum     []string // slice of columns for sum aggregation
 )
 
 var parseCmd = &cobra.Command{
@@ -20,8 +21,8 @@ var parseCmd = &cobra.Command{
 	Short: "Processing CSV data",
 	Long:  `The parse command allows you to read CSV file data, perform filtering, column selection, grouping, and aggregation.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// var records [][]string
 		var parsedFilters []csv.Filter
+		var parsedAggregations []csv.Aggregation
 
 		// Check if input flag is not empty and check existance of file
 		if input != "" {
@@ -41,17 +42,30 @@ var parseCmd = &cobra.Command{
 		// Process filters
 		if len(filters) != 0 {
 			log.Println("Parsing filters...")
-		}
-		for _, filter := range filters {
-			parsedFilter, err := csv.ParseFilter(filter, scheme)
-			if err != nil {
-				log.Fatalf("Filter '%s' parsing error: %s", filter, err)
+
+			for _, filter := range filters {
+				parsedFilter, err := csv.ParseFilter(filter, scheme)
+				if err != nil {
+					log.Fatalf("Filter '%s' parsing error: %s", filter, err)
+				}
+				parsedFilters = append(parsedFilters, parsedFilter)
 			}
-			parsedFilters = append(parsedFilters, parsedFilter)
+		}
+
+		// Process aggregations
+		if len(sum) != 0 {
+			log.Println("Pasing aggregations...")
+			for _, column := range sum {
+				parsedAggregation, err := csv.ParseAggregation(column, csv.Sum, scheme)
+				if err != nil {
+					log.Fatalf("Aggregation sum('%s') parsing error: %s", column, err)
+				}
+				parsedAggregations = append(parsedAggregations, parsedAggregation)
+			}
 		}
 
 		log.Println("Parsing file...")
-		records, err := csv.ParseCSV(input, scheme, parsedFilters)
+		records, err := csv.ParseCSV(input, scheme, parsedFilters, parsedAggregations)
 		if err != nil {
 			log.Fatal("Error parsing csv file: ", err)
 		}
@@ -79,4 +93,6 @@ func init() {
 	parseCmd.Flags().StringSliceVarP(&filters, "filter", "f", []string{}, `set of filters in the format "column operation value"
 can be passed in by separating them with commas or by reusing the flag
 possible operations: =, !=, >, >=, <, <=`)
+
+	parseCmd.Flags().StringSliceVarP(&sum, "sum", "s", []string{}, "set of columns for sum aggregation")
 }
