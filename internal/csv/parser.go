@@ -139,9 +139,11 @@ func ParseCSV(filepath string, scheme Scheme, filters []Filter, aggregations []A
 			}
 		}
 
-		if totalComparisonResult {
-			records = append(records, record)
+		if !totalComparisonResult {
+			continue
 		}
+
+		records = append(records, record)
 	}
 
 	return records, nil
