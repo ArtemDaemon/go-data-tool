@@ -46,7 +46,7 @@ func (ct ColumnType[T]) Compare(aRaw, bRaw string, cmp comparisonType) (bool, er
 	}
 	cmpFunc, ok := ct.CmpFns[cmp]
 	if !ok {
-		return false, fmt.Errorf("unknown comparison type: %s", cmp)
+		return false, fmt.Errorf("unknown comparison type")
 	}
 	return cmpFunc(a, b), nil
 }
