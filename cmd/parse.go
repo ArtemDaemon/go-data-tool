@@ -14,6 +14,11 @@ var (
 	output  string   // output file
 	filters []string // slice of installed filters
 	sum     []string // slice of columns for sum aggregation
+	avg     []string // slice of columns for avg aggregation
+	max     []string // slice of columns for max aggregation
+	min     []string // slice of columns for min aggregation
+	count   []string // slice of columns for count aggregation
+	countd  []string // slice of columns for cound distinct aggregation
 )
 
 var parseCmd = &cobra.Command{
@@ -22,7 +27,7 @@ var parseCmd = &cobra.Command{
 	Long:  `The parse command allows you to read CSV file data, perform filtering, column selection, grouping, and aggregation.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var parsedFilters []csv.Filter
-		var parsedAggregations []csv.Aggregation
+		var parsedAggregations []csv.Aggregator
 
 		// Check if input flag is not empty and check existance of file
 		if input != "" {
@@ -56,7 +61,7 @@ var parseCmd = &cobra.Command{
 		if len(sum) != 0 {
 			log.Println("Pasing aggregations...")
 			for _, column := range sum {
-				parsedAggregation, err := csv.ParseAggregation(column, csv.Sum, scheme)
+				parsedAggregation, err := csv.ParseAggregation(column, csv.AggSum, scheme)
 				if err != nil {
 					log.Fatalf("Aggregation sum('%s') parsing error: %s", column, err)
 				}
@@ -94,5 +99,10 @@ func init() {
 can be passed in by separating them with commas or by reusing the flag
 possible operations: =, !=, >, >=, <, <=`)
 
-	parseCmd.Flags().StringSliceVarP(&sum, "sum", "s", []string{}, "set of columns for sum aggregation")
+	parseCmd.Flags().StringSliceVarP(&sum, "sum", "s", []string{}, "set of columns for 'sum' aggregation")
+	parseCmd.Flags().StringSliceVarP(&avg, "avg", "a", []string{}, "set of columns for 'avg' aggregation")
+	parseCmd.Flags().StringSliceVarP(&max, "max", "mx", []string{}, "set of columns for 'max' aggregation")
+	parseCmd.Flags().StringSliceVarP(&min, "min", "mn", []string{}, "set of columns for 'min' aggregation")
+	parseCmd.Flags().StringSliceVarP(&count, "count", "cnt", []string{}, "set of columns for 'count' aggregation")
+	parseCmd.Flags().StringSliceVarP(&countd, "countd", "cntd", []string{}, "set of columns for 'count distinct' aggregation")
 }

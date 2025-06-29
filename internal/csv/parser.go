@@ -98,7 +98,7 @@ func ParseCSVStructure(filepath string) (Scheme, error) {
 	return scheme, nil
 }
 
-func ParseCSV(filepath string, scheme Scheme, filters []Filter, aggregations []Aggregation) ([][]string, error) {
+func ParseCSV(filepath string, scheme Scheme, filters []Filter, aggregations []Aggregator) ([][]string, error) {
 	f, err := os.Open(filepath)
 	if err != nil {
 		return nil, err
@@ -233,28 +233,62 @@ func getTypeByValue(value string) ColumnTypeInterface {
 	return TypeString
 }
 
-func ParseAggregation(aggregationColumn string, aggraggregationType AggregationType, scheme Scheme) (Aggregation, error) {
-	aggregation := Aggregation{}
-
+func ParseAggregation(aggregationColumn string, aggregationType AggregationType, scheme Scheme) (Aggregator, error) {
 	// Check if column exists
 	columns := scheme.Columns
 	column, ok := columns[aggregationColumn]
 	if !ok {
-		return aggregation, errors.New("filter for non-existent column")
+		return nil, errors.New("filter for non-existent column")
 	}
 
 	// For sum and avg check if columnType is not string
-	if (aggraggregationType == Sum || aggraggregationType == Avg) && column.ColumnType == TypeString {
-		var typeStr string
-		if aggraggregationType == Sum {
-			typeStr = "sum"
-		} else {
-			typeStr = "avg"
-		}
-		return aggregation, fmt.Errorf("'%s' aggregation type can only be applied to columns with numeric data type", typeStr)
+	if (aggregationType == AggSum || aggregationType == AggAvg) && column.ColumnType == TypeString {
+		return nil, fmt.Errorf("'%s' aggregation type can only be applied to columns with numeric data type", aggregationType)
 	}
 
-	aggregation.aggregationType = aggraggregationType
-	aggregation.column = aggregationColumn
-	return aggregation, nil
+	columnType := column.ColumnType
+
+	switch aggregationType {
+	case AggSum:
+		switch columnType {
+		case TypeInt:
+			return SumAggregator[int]{aggregationColumn, TypeInt}, nil
+		case TypeFloat:
+			return SumAggregator[float64]{aggregationColumn, TypeFloat}, nil
+		default:
+			return nil, fmt.Errorf("cannot aggregate type %s", column.ColumnType.Name())
+		}
+	case AggAvg:
+		switch column.ColumnType.Name() {
+		case TypeInt.TypeName:
+			return AvgAggregator[int]{columnName: aggregationColumn, columnType: TypeInt}, nil
+		case TypeFloat.TypeName:
+			return AvgAggregator[float64]{columnName: aggregationColumn, columnType: TypeFloat}, nil
+		default:
+			return nil, fmt.Errorf("cannot aggregate type %s", column.ColumnType.Name())
+		}
+	case AggCount:
+		return CountAggregator[string]{columnName: aggregationColumn}, nil
+	case AggCountDistinct:
+		return CountDistinctAggregator[string]{columnName: aggregationColumn}, nil
+	case AggMax:
+		switch column.ColumnType.Name() {
+		case TypeInt.TypeName:
+			return MaxAggregator[int]{columnName: aggregationColumn, columnType: TypeInt}, nil
+		case TypeFloat.TypeName:
+			return MaxAggregator[float64]{columnName: aggregationColumn, columnType: TypeFloat}, nil
+		default:
+			return nil, fmt.Errorf("cannot aggregate type %s", column.ColumnType.Name())
+		}
+	case AggMin:
+		switch column.ColumnType.Name() {
+		case TypeInt.TypeName:
+			return MinAggregator[int]{columnName: aggregationColumn, columnType: TypeInt}, nil
+		case TypeFloat.TypeName:
+			return MinAggregator[float64]{columnName: aggregationColumn, columnType: TypeFloat}, nil
+		default:
+			return nil, fmt.Errorf("cannot aggregate type %s", column.ColumnType.Name())
+		}
+	}
+	return nil, fmt.Errorf("unknown aggregation type %s", aggregationType)
 }
