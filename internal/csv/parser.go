@@ -12,20 +12,37 @@ import (
 )
 
 func ParseCSVStructure(filepath string) (Scheme, error) {
+	// Declare scheme
 	scheme := Scheme{}
+
+	// Open the CSV file and check that the file exists
 	f, err := os.Open(filepath)
 	if err != nil {
 		return scheme, err
 	}
 	defer f.Close()
 
+	// Creating a reader
 	csvReader := csv.NewReader(f)
+
+	// Read the headers separately
 	headers, err := csvReader.Read()
 	if err != nil {
 		return scheme, err
 	}
 
+	/*
+		Create a map for storing columns info
+		{
+			"columnName": {
+				Index: int,
+				ColumnType: ColumnType
+			}
+		}
+	*/
 	columns := make(map[string]ColumnInfo)
+
+	// All are set to type string in case there are no data rows in the file
 	for i, header := range headers {
 		columns[header] = ColumnInfo{
 			Index:      i,
@@ -34,9 +51,16 @@ func ParseCSVStructure(filepath string) (Scheme, error) {
 	}
 	scheme.Headers = headers
 
+	// Lists of indexes of columns with numeric values
 	var intColumnIndices, floatColumnIndices []int
+
+	/*
+		Read the first line of data separately to
+		check the types of each value and find the numeric types
+	*/
 	firstRow, err := csvReader.Read()
 	if err != nil {
+		// The error may mean that there is no more data to read
 		if errors.Is(err, io.EOF) {
 			scheme.Columns = columns
 			return scheme, nil
@@ -55,6 +79,10 @@ func ParseCSVStructure(filepath string) (Scheme, error) {
 		}
 	}
 
+	/*
+		If numeric columns are found, the file is read to the end to
+		ensure that the column contains only numeric values
+	*/
 	for len(intColumnIndices) != 0 || len(floatColumnIndices) != 0 {
 		record, err := csvReader.Read()
 		if err != nil {
@@ -99,23 +127,61 @@ func ParseCSVStructure(filepath string) (Scheme, error) {
 }
 
 func ParseCSV(filepath string, scheme Scheme, filters []Filter, aggregations []Aggregator) ([][]string, error) {
+	// Open the CSV file and check that the file exists
 	f, err := os.Open(filepath)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
 
+	// Final data
 	var records [][]string
+	// Creating a reader
 	csvReader := csv.NewReader(f)
-	headers, err := csvReader.Read()
-	if err != nil {
-		return nil, err
+	// Array of column names
+	var headers []string
+
+	// Aggregation indication flag
+	hasAggregations := len(aggregations) != 0
+	// Map for the unique aggregation columns
+	aggragatedColumns := make(map[string]bool)
+	/*
+		Map for grouping aggregated values
+		{
+			"groupKey": {
+				"columnName": ["1", "2", "3"...]
+			}
+		}
+	*/
+	groupingMap := make(map[string]map[string][]string)
+	groupingMap[""] = make(map[string][]string)
+	/*
+		If aggregations are specified,
+		only the aggregation columns are added to the final headers
+	*/
+	if hasAggregations {
+		for _, v := range aggregations {
+			headers = append(headers, v.Name())
+			aggragatedColumns[v.Column()] = true
+		}
+		_, err = csvReader.Read()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// Otherwise, all columns from the file are added
+		headers, err = csvReader.Read()
+		if err != nil {
+			return nil, err
+		}
 	}
 	records = append(records, headers)
 
+	// Column Information Map
 	columns := scheme.Columns
 
 	for {
+		// Reading lines from a file
 		record, err := csvReader.Read()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
@@ -124,7 +190,9 @@ func ParseCSV(filepath string, scheme Scheme, filters []Filter, aggregations []A
 			return nil, err
 		}
 
+		// Filtering result
 		totalComparisonResult := true
+		// Checking a row against all filters
 		for _, filter := range filters {
 			column := columns[filter.column]
 			columnValue := record[column.Index]
@@ -143,7 +211,36 @@ func ParseCSV(filepath string, scheme Scheme, filters []Filter, aggregations []A
 			continue
 		}
 
-		records = append(records, record)
+		/*
+			If aggregations are specified,
+			save data for grouping
+		*/
+		if hasAggregations {
+			groupingColumns := groupingMap[""]
+			for columnName := range aggragatedColumns {
+				groupingValues := groupingColumns[columnName]
+				groupingValues = append(groupingValues, record[scheme.Columns[columnName].Index])
+				groupingColumns[columnName] = groupingValues
+			}
+			groupingMap[""] = groupingColumns
+		} else {
+			// Otherwise, save all data
+			records = append(records, record)
+		}
+	}
+
+	if hasAggregations {
+		for _, values := range groupingMap {
+			currentRecord := make([]string, len(aggregations))
+			for i, aggregation := range aggregations {
+				aggregationResult, err := aggregation.Aggregate(values[aggregation.Column()])
+				if err != nil {
+					return nil, err
+				}
+				currentRecord[i] = aggregationResult
+			}
+			records = append(records, currentRecord)
+		}
 	}
 
 	return records, nil

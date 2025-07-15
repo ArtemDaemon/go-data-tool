@@ -58,12 +58,47 @@ var parseCmd = &cobra.Command{
 		}
 
 		// Process aggregations
-		if len(sum) != 0 {
+		if len(sum) != 0 || len(avg) != 0 || len(max) != 0 || len(min) != 0 || len(count) != 0 || len(countd) != 0 {
 			log.Println("Pasing aggregations...")
 			for _, column := range sum {
 				parsedAggregation, err := csv.ParseAggregation(column, csv.AggSum, scheme)
 				if err != nil {
 					log.Fatalf("Aggregation sum('%s') parsing error: %s", column, err)
+				}
+				parsedAggregations = append(parsedAggregations, parsedAggregation)
+			}
+			for _, column := range avg {
+				parsedAggregation, err := csv.ParseAggregation(column, csv.AggAvg, scheme)
+				if err != nil {
+					log.Fatalf("Aggregation avg('%s') parsing error: %s", column, err)
+				}
+				parsedAggregations = append(parsedAggregations, parsedAggregation)
+			}
+			for _, column := range max {
+				parsedAggregation, err := csv.ParseAggregation(column, csv.AggMax, scheme)
+				if err != nil {
+					log.Fatalf("Aggregation max('%s') parsing error: %s", column, err)
+				}
+				parsedAggregations = append(parsedAggregations, parsedAggregation)
+			}
+			for _, column := range min {
+				parsedAggregation, err := csv.ParseAggregation(column, csv.AggMin, scheme)
+				if err != nil {
+					log.Fatalf("Aggregation min('%s') parsing error: %s", column, err)
+				}
+				parsedAggregations = append(parsedAggregations, parsedAggregation)
+			}
+			for _, column := range count {
+				parsedAggregation, err := csv.ParseAggregation(column, csv.AggCount, scheme)
+				if err != nil {
+					log.Fatalf("Aggregation count('%s') parsing error: %s", column, err)
+				}
+				parsedAggregations = append(parsedAggregations, parsedAggregation)
+			}
+			for _, column := range countd {
+				parsedAggregation, err := csv.ParseAggregation(column, csv.AggCountDistinct, scheme)
+				if err != nil {
+					log.Fatalf("Aggregation countd('%s') parsing error: %s", column, err)
 				}
 				parsedAggregations = append(parsedAggregations, parsedAggregation)
 			}
@@ -101,8 +136,8 @@ possible operations: =, !=, >, >=, <, <=`)
 
 	parseCmd.Flags().StringSliceVarP(&sum, "sum", "s", []string{}, "set of columns for 'sum' aggregation")
 	parseCmd.Flags().StringSliceVarP(&avg, "avg", "a", []string{}, "set of columns for 'avg' aggregation")
-	parseCmd.Flags().StringSliceVarP(&max, "max", "mx", []string{}, "set of columns for 'max' aggregation")
-	parseCmd.Flags().StringSliceVarP(&min, "min", "mn", []string{}, "set of columns for 'min' aggregation")
-	parseCmd.Flags().StringSliceVarP(&count, "count", "cnt", []string{}, "set of columns for 'count' aggregation")
-	parseCmd.Flags().StringSliceVarP(&countd, "countd", "cntd", []string{}, "set of columns for 'count distinct' aggregation")
+	parseCmd.Flags().StringSliceVarP(&max, "max", "M", []string{}, "set of columns for 'max' aggregation")
+	parseCmd.Flags().StringSliceVarP(&min, "min", "m", []string{}, "set of columns for 'min' aggregation")
+	parseCmd.Flags().StringSliceVarP(&count, "count", "c", []string{}, "set of columns for 'count' aggregation")
+	parseCmd.Flags().StringSliceVarP(&countd, "countd", "C", []string{}, "set of columns for 'count distinct' aggregation")
 }

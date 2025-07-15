@@ -9,7 +9,7 @@ type Aggregator interface {
 	Name() string                     // {aggregationType_column} like count_age
 	Column() string                   // column name
 	AggregationType() AggregationType // sum, avg, mix, max, count, countd (count distinct)
-	Aggregate([]string) (any, error)
+	Aggregate([]string) (string, error)
 }
 
 type AggregationType string
@@ -40,16 +40,16 @@ func (a SumAggregator[T]) AggregationType() AggregationType {
 	return AggSum
 }
 
-func (a SumAggregator[T]) Aggregate(values []string) (any, error) {
+func (a SumAggregator[T]) Aggregate(values []string) (string, error) {
 	var sum T
 	for _, s := range values {
 		v, err := a.columnType.ParseTyped(s)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 		sum += v
 	}
-	return sum, nil
+	return fmt.Sprintf("%v", sum), nil
 }
 
 type AvgAggregator[T Numeric] struct {
@@ -69,16 +69,16 @@ func (a AvgAggregator[T]) AggregationType() AggregationType {
 	return AggAvg
 }
 
-func (a AvgAggregator[T]) Aggregate(values []string) (any, error) {
+func (a AvgAggregator[T]) Aggregate(values []string) (string, error) {
 	var sum T
 	for _, s := range values {
 		v, err := a.columnType.ParseTyped(s)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 		sum += v
 	}
-	return float64(sum) / float64(len(values)), nil
+	return fmt.Sprintf("%v", float64(sum)/float64(len(values))), nil
 }
 
 type MaxAggregator[T Ordered] struct {
@@ -98,12 +98,12 @@ func (a MaxAggregator[T]) AggregationType() AggregationType {
 	return AggMax
 }
 
-func (a MaxAggregator[T]) Aggregate(values []string) (any, error) {
+func (a MaxAggregator[T]) Aggregate(values []string) (string, error) {
 	var max T
 	for _, s := range values {
 		v, err := a.columnType.ParseTyped(s)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 		if isEmpty(max) {
 			max = v
@@ -111,7 +111,7 @@ func (a MaxAggregator[T]) Aggregate(values []string) (any, error) {
 			max = v
 		}
 	}
-	return max, nil
+	return fmt.Sprintf("%v", max), nil
 }
 
 type MinAggregator[T Ordered] struct {
@@ -131,12 +131,12 @@ func (a MinAggregator[T]) AggregationType() AggregationType {
 	return AggMin
 }
 
-func (a MinAggregator[T]) Aggregate(values []string) (any, error) {
+func (a MinAggregator[T]) Aggregate(values []string) (string, error) {
 	var min T
 	for _, s := range values {
 		v, err := a.columnType.ParseTyped(s)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 		if isEmpty(min) {
 			min = v
@@ -144,7 +144,7 @@ func (a MinAggregator[T]) Aggregate(values []string) (any, error) {
 			min = v
 		}
 	}
-	return min, nil
+	return fmt.Sprintf("%v", min), nil
 }
 
 type CountAggregator[T Ordered] struct {
@@ -163,8 +163,8 @@ func (a CountAggregator[T]) AggregationType() AggregationType {
 	return AggCount
 }
 
-func (a CountAggregator[T]) Aggregate(values []string) (any, error) {
-	return len(values), nil
+func (a CountAggregator[T]) Aggregate(values []string) (string, error) {
+	return fmt.Sprintf("%v", len(values)), nil
 }
 
 type CountDistinctAggregator[T Ordered] struct {
@@ -183,12 +183,12 @@ func (a CountDistinctAggregator[T]) AggregationType() AggregationType {
 	return AggCountDistinct
 }
 
-func (a CountDistinctAggregator[T]) Aggregate(values []string) (any, error) {
+func (a CountDistinctAggregator[T]) Aggregate(values []string) (string, error) {
 	valuesMap := make(map[string]bool)
 	for _, v := range values {
 		valuesMap[v] = true
 	}
-	return len(valuesMap), nil
+	return fmt.Sprintf("%v", len(valuesMap)), nil
 }
 
 func isEmpty[T any](v T) bool {
