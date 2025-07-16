@@ -126,7 +126,7 @@ func ParseCSVStructure(filepath string) (Scheme, error) {
 	return scheme, nil
 }
 
-func ParseCSV(filepath string, scheme Scheme, filters []Filter, aggregations []Aggregator) ([][]string, error) {
+func ParseCSV(filepath string, scheme Scheme, filters []Filter, aggregations []Aggregator, groups []string) ([][]string, error) {
 	// Open the CSV file and check that the file exists
 	f, err := os.Open(filepath)
 	if err != nil {
@@ -143,6 +143,8 @@ func ParseCSV(filepath string, scheme Scheme, filters []Filter, aggregations []A
 
 	// Aggregation indication flag
 	hasAggregations := len(aggregations) != 0
+	// Grouping indication flag
+	hasGroups := len(groups) != 0
 	// Map for the unique aggregation columns
 	aggragatedColumns := make(map[string]bool)
 	/*
@@ -153,8 +155,18 @@ func ParseCSV(filepath string, scheme Scheme, filters []Filter, aggregations []A
 			}
 		}
 	*/
-	groupingMap := make(map[string]map[string][]string)
-	groupingMap[""] = make(map[string][]string)
+	groupingMeasuresMap := make(map[string]map[string][]string)
+	/*
+		Map for storing group fields
+		{
+			"groupKey": ["1", "2", "3"...]
+		}
+	*/
+	groupingAttributesMap := make(map[string][]string)
+	// If columns are specified for grouping, add grouping columns to the header
+	if hasGroups {
+		headers = append(headers, groups...)
+	}
 	/*
 		If aggregations are specified,
 		only the aggregation columns are added to the final headers
@@ -164,13 +176,17 @@ func ParseCSV(filepath string, scheme Scheme, filters []Filter, aggregations []A
 			headers = append(headers, v.Name())
 			aggragatedColumns[v.Column()] = true
 		}
-		_, err = csvReader.Read()
+	}
+
+	if !hasAggregations && !hasGroups {
+		// If neither aggregation nor grouping is specified, add headers from the file
+		headers, err = csvReader.Read()
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		// Otherwise, all columns from the file are added
-		headers, err = csvReader.Read()
+		// Otherwise, we deliberately skip the line with the headers from the file
+		_, err = csvReader.Read()
 		if err != nil {
 			return nil, err
 		}
@@ -211,39 +227,73 @@ func ParseCSV(filepath string, scheme Scheme, filters []Filter, aggregations []A
 			continue
 		}
 
+		// Key for grouping
+		groupKey := ""
+		/*
+			If grouping columns are specified,
+			generate key and insert data
+		*/
+		if hasGroups {
+			groupKey = generateGroupKey(record, groups, scheme)
+			if _, ok := groupingAttributesMap[groupKey]; !ok {
+				groupAttributes := make([]string, len(groups))
+				for i, v := range groups {
+					groupAttributes[i] = record[scheme.Columns[v].Index]
+				}
+				groupingAttributesMap[groupKey] = groupAttributes
+			}
+		}
 		/*
 			If aggregations are specified,
 			save data for grouping
 		*/
 		if hasAggregations {
-			groupingColumns := groupingMap[""]
+			if !hasGroups {
+				groupKey = ""
+			}
+			groupingColumns, ok := groupingMeasuresMap[groupKey]
+			if !ok {
+				groupingColumns = make(map[string][]string)
+			}
 			for columnName := range aggragatedColumns {
 				groupingValues := groupingColumns[columnName]
 				groupingValues = append(groupingValues, record[scheme.Columns[columnName].Index])
 				groupingColumns[columnName] = groupingValues
 			}
-			groupingMap[""] = groupingColumns
-		} else {
+			groupingMeasuresMap[groupKey] = groupingColumns
+		}
+
+		if !hasAggregations && !hasGroups {
 			// Otherwise, save all data
 			records = append(records, record)
 		}
 	}
 
-	if hasAggregations {
-		for _, values := range groupingMap {
-			currentRecord := make([]string, len(aggregations))
+	if hasAggregations || hasGroups {
+		for key, attributes := range groupingAttributesMap {
+			currentRecord := make([]string, len(aggregations)+len(groups))
+			copy(currentRecord, attributes)
 			for i, aggregation := range aggregations {
-				aggregationResult, err := aggregation.Aggregate(values[aggregation.Column()])
+				aggregationResult, err := aggregation.Aggregate(groupingMeasuresMap[key][aggregation.Column()])
 				if err != nil {
 					return nil, err
 				}
-				currentRecord[i] = aggregationResult
+				currentRecord[i+len(groups)] = aggregationResult
 			}
 			records = append(records, currentRecord)
 		}
 	}
 
 	return records, nil
+}
+
+func generateGroupKey(record []string, groups []string, scheme Scheme) string {
+	var key string
+	for _, v := range groups {
+		key += record[scheme.Columns[v].Index]
+		key += "_"
+	}
+	return key
 }
 
 func SaveCSV(records [][]string, filepath string) error {
@@ -388,4 +438,11 @@ func ParseAggregation(aggregationColumn string, aggregationType AggregationType,
 		}
 	}
 	return nil, fmt.Errorf("unknown aggregation type %s", aggregationType)
+}
+
+func ParseGroup(columnName string, scheme Scheme) (string, error) {
+	if _, ok := scheme.Columns[columnName]; !ok {
+		return "", fmt.Errorf("column does not exists")
+	}
+	return columnName, nil
 }

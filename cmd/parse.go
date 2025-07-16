@@ -19,6 +19,7 @@ var (
 	min     []string // slice of columns for min aggregation
 	count   []string // slice of columns for count aggregation
 	countd  []string // slice of columns for cound distinct aggregation
+	group   []string // slice of columns for grouping
 )
 
 var parseCmd = &cobra.Command{
@@ -28,6 +29,7 @@ var parseCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		var parsedFilters []csv.Filter
 		var parsedAggregations []csv.Aggregator
+		var parsedGroups []string
 
 		// Check if input flag is not empty and check existance of file
 		if input != "" {
@@ -104,8 +106,19 @@ var parseCmd = &cobra.Command{
 			}
 		}
 
+		if len(group) != 0 {
+			log.Println("Processing group attributes...")
+			for _, column := range group {
+				parsedGroup, err := csv.ParseGroup(column, scheme)
+				if err != nil {
+					log.Fatalf("Grouping '%s' parsing error: %s", column, err)
+				}
+				parsedGroups = append(parsedGroups, parsedGroup)
+			}
+		}
+
 		log.Println("Parsing file...")
-		records, err := csv.ParseCSV(input, scheme, parsedFilters, parsedAggregations)
+		records, err := csv.ParseCSV(input, scheme, parsedFilters, parsedAggregations, parsedGroups)
 		if err != nil {
 			log.Fatal("Error parsing csv file: ", err)
 		}
@@ -140,4 +153,6 @@ possible operations: =, !=, >, >=, <, <=`)
 	parseCmd.Flags().StringSliceVarP(&min, "min", "m", []string{}, "set of columns for 'min' aggregation")
 	parseCmd.Flags().StringSliceVarP(&count, "count", "c", []string{}, "set of columns for 'count' aggregation")
 	parseCmd.Flags().StringSliceVarP(&countd, "countd", "C", []string{}, "set of columns for 'count distinct' aggregation")
+
+	parseCmd.Flags().StringSliceVarP(&group, "group", "g", []string{}, "set of columns for grouping")
 }
